@@ -1,0 +1,10 @@
+LICENSE NOT SELECTED
+
+This project has no selected open-source license. The project owner must select
+and approve licensing terms before redistribution. This file does not grant
+rights to Verity IT trademarks or logo artwork. The supplied logo remains
+subject to the rights of its owner.
+
+Bundled third-party OCR components retain their own licenses, documented in
+THIRD-PARTY-NOTICES.md and vendor/licenses/. The unselected project license
+does not replace or restrict those third-party licenses.

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' blob: 'wasm-unsafe-eval'; worker-src blob:; style-src 'self'; img-src 'self' data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Help Desk Safebox · Verity IT</title>
+<link rel="stylesheet" href="css/styles.css">
+<script defer src="js/sanitizer.js"></script><script defer src="js/prompt-builder.js"></script><script defer src="js/storage.js"></script><script defer src="vendor/ocr-assets.js"></script><script defer src="js/ocr.js"></script><script defer src="js/screenshot-context.js"></script><script defer src="js/screenshots.js"></script><script defer src="js/app.js"></script>
+</head>
+<body>
+<div class="shell">
+<header>
+<div><div class="brand"><img id="logo" src="assets/verity-it-logo.svg" alt="Verity IT"><span id="logoFallback" hidden>VERITY <b>IT</b></span><span class="brand-rule"></span><span class="eyebrow">HELP DESK UTILITIES</span></div><h1>Help Desk Safebox</h1><p class="subtitle">Sanitize ticket information before using external AI tools.</p></div>
+<div class="privacy-status"><strong>LOCAL ONLY</strong><span>● Processing stays in this browser</span><small>No automatic AI transmission</small></div>
+</header>
+<main>
+<div class="toolbar"><p class="workflow"><span>01 Paste</span><i>→</i><span>02 Scan</span><i>→</i><span>03 Review</span><i>→</i><span>04 Copy</span></p><div class="actions"><button id="demo">Load Safe Demo</button><button id="clearAll" class="quiet">Clear All</button></div></div>
+<div class="workspace">
+<div class="column">
+<section class="raw-section" aria-labelledby="rawHeading"><div class="section-heading"><h2 id="rawHeading"><span>01</span> Raw ticket</h2><span class="badge danger">RAW — DO NOT COPY TO AI</span></div><p class="helper">Paste ConnectWise ticket notes here. Raw text is processed locally and is not intentionally stored.</p>
+<label class="sr-only" for="raw">Raw ticket notes</label><textarea id="raw" class="ticket raw" placeholder="Paste ConnectWise ticket notes here…" spellcheck="false" autocomplete="off" maxlength="150000"></textarea><div class="under-input"><span id="counter">0 characters · 0 lines</span><span>Ctrl / ⌘ + Enter to scan</span></div>
+<details id="screenshotSection" class="screenshots"><summary>Screenshots <span id="screenshotCount" class="muted">· optional</span></summary>
+<p class="helper">Read screenshot text on this device, then keep the useful troubleshooting context. Images are never included in the AI prompt.</p>
+<div id="imageDrop" class="image-drop" tabindex="0" role="button" aria-label="Add screenshots. Press Enter to choose images, paste a screenshot here, or drop image files.">
+<strong>Add screenshots</strong><span>Drop images, paste with Ctrl / ⌘ + V, or choose files</span><small>PNG, JPEG, WebP · up to 4 images · 10 MB each</small></div>
+<input id="imageFiles" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+<p id="ocrStatus" class="helper" role="status" aria-live="polite">English text recognition · local processing</p>
+<div id="screenshotList"></div>
+<p class="warning">Original screenshots and extracted text are raw. OCR can miss or misread identifiers and error codes. Compare with the image, then Scan &amp; Sanitize.</p>
+</details>
+<details class="additional"><summary>Already tried / additional tech notes</summary><label class="sr-only" for="notes">Additional technical notes, also sanitized</label><textarea id="notes" rows="4" maxlength="50000" spellcheck="false" autocomplete="off" placeholder="Steps performed, observations, or test results…"></textarea><p class="helper">These notes are sanitized together with the ticket.</p></details>
+<div class="actions"><button id="scan" class="primary">Scan &amp; Sanitize <span aria-hidden="true">→</span></button><button id="clearRaw" class="quiet">Clear</button></div>
+<details class="settings"><summary>Privacy settings &amp; custom redactions</summary><label class="check"><input type="checkbox" id="strict" checked> Strict privacy mode</label><p class="helper">Recommended. Also generalizes network and system identifiers.</p><p id="strictWarning" class="warning" hidden>Strict mode is off. Infrastructure details may remain; review them before copying.</p><label class="eyebrow" for="custom">CUSTOM REDACTIONS</label><textarea id="custom" rows="3" maxlength="20000" placeholder="One name or phrase per line" spellcheck="false" autocomplete="off"></textarea><p class="helper">Session only. These terms are never saved on this device.</p><button id="resetSettings" class="quiet">Reset app settings</button></details>
+</section>
+<section class="scan-section" aria-labelledby="scanHeading"><div class="section-heading"><h2 id="scanHeading"><span>02</span> Privacy scan</h2><span id="scanBadge" class="badge neutral">AWAITING SCAN</span></div><div id="findings" class="findings"><p class="empty">Scan a ticket to see what was generalized.</p></div><p class="review-note">Automatic detection can miss names, company names, locations, or other context-specific identifiers. Always review the full output.</p></section>
+</div><div class="column">
+<section class="safe-section" aria-labelledby="safeHeading"><div class="section-heading"><h2 id="safeHeading"><span>03</span> Sanitized ticket</h2><span id="safeBadge" class="badge amber">SANITIZED — REVIEW REQUIRED</span></div><p class="helper">Review every line. Edit anything the scan missed before continuing.</p><label class="sr-only" for="sanitized">Editable sanitized ticket</label><textarea id="sanitized" class="ticket safe" placeholder="Sanitized ticket information will appear here…" spellcheck="false" autocomplete="off" maxlength="220000" disabled></textarea><div class="actions small-actions"><button id="rescan" disabled>Re-scan Edited Text</button><button id="copyTicket" disabled>Copy Sanitized Ticket</button><button id="clearSafe" class="quiet">Clear</button></div><div class="review-box"><label class="check"><input id="review" type="checkbox" disabled><span>I reviewed the sanitized text and did not notice customer or personally identifying information.</span></label><p class="helper">Your confirmation resets whenever the content changes.</p></div></section>
+<section class="prompt-section" aria-labelledby="builderHeading"><div class="section-heading"><h2 id="builderHeading"><span>04</span> AI prompt builder</h2><span class="eyebrow">MANUAL HANDOFF</span></div><fieldset id="modes"><legend class="sr-only">Select prompt type</legend><label><input type="radio" name="mode" value="troubleshoot" checked><span>Troubleshoot</span></label><label><input type="radio" name="mode" value="questions"><span>Questions to ask</span></label><label><input type="radio" name="mode" value="next"><span>Next steps</span></label><label><input type="radio" name="mode" value="escalation"><span>Escalation summary</span></label><label><input type="radio" name="mode" value="resolution"><span>Resolution notes</span></label></fieldset><div class="prompt-label"><label class="eyebrow" for="prompt">AI-READY PROMPT</label><span id="promptState">Awaiting sanitized text</span></div><p class="helper">Built only from the sanitized editor above. Human review is required.</p><textarea id="prompt" rows="11" readonly placeholder="Your troubleshooting prompt will appear here…" spellcheck="false"></textarea><div class="copy-row"><button id="copyPrompt" class="primary" disabled>Copy Safe Prompt</button><button id="regenerate" disabled>Regenerate</button><button id="clearPrompt" class="quiet">Clear</button></div><p class="helper">Review and confirm above to enable copying. Then paste manually into an approved AI tool.</p></section>
+</div></div>
+<details class="privacy-info"><summary>How privacy works</summary><p>Processing occurs in your browser. This version has no AI API or ConnectWise API integration, analytics, or telemetry. Ticket content, screenshots, extracted text, notes, findings, and prompts are not intentionally persisted. Screenshot text is read locally with a bundled OCR engine; no image is uploaded. Suggested context uses simple text rules, not AI image understanding. Only your selected prompt mode is remembered locally.</p><p>Automatic detection is imperfect and user review is required. Company policy always takes precedence over this tool. Clearing removes content from the interface and app references; it does not securely erase browser memory or your system clipboard. Browser extensions, clipboard history, and device software are outside this app’s control.</p><p>Hosting loads the app’s local files normally. After loading, scanning and prompt generation make no network requests. For offline use, open the downloaded index.html.</p></details>
+<div id="status" role="status" aria-live="polite" aria-atomic="true">Ready. Paste a ticket or load the fictional demo.</div>
+</main>
+<footer><span>Help Desk Safebox <span class="muted">· by Verity IT</span></span><span>Local privacy utility · v1.1</span></footer>
+<noscript>This application requires JavaScript for local sanitization. No ticket data is sent to a server.</noscript>
+</div></body></html>
