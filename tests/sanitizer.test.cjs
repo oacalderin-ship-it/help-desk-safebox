@@ -1,0 +1,31 @@
+/* Optional development check: node tests/sanitizer.test.cjs. No runtime dependencies. */
+const assert=require('node:assert/strict');
+require('../js/sanitizer.js');require('../js/prompt-builder.js');
+const scan=(text,options)=>SafeboxSanitizer.sanitizeTicket(text,options);
+let count=0;
+function test(name,run){run();count++;console.log('PASS '+name);}
+test('Email and UPN',()=>assert.equal(scan('john@example.com jsmith@example.local').text,'[EMAIL] [EMAIL]'));
+for(const phone of ['904-555-1212','(904) 555-1212','904.555.1212','+1 904 555 1212'])test('Phone '+phone,()=>assert.equal(scan(phone).text,'[PHONE]'));
+test('IPv4 public and private',()=>assert.equal(scan('192.168.1.20 10.10.5.12 8.8.8.8 172.16.0.2').text,'[PRIVATE_IP] [PRIVATE_IP] [PUBLIC_IP] [PRIVATE_IP]'));
+test('Invalid IPv4 preserved',()=>assert.equal(scan('999.999.999.999').text,'999.999.999.999'));
+for(const ip of ['fe80::1','2001:db8::2','::1','::','::ffff:192.0.2.1','2001:0db8:0000:0000:0000:ff00:0042:8329'])test('IPv6 '+ip,()=>assert.equal(scan(ip).text,'[IPV6]'));
+test('MAC formats',()=>assert.equal(scan('AA:BB:CC:DD:EE:FF AA-BB-CC-DD-EE-FF').text,'[MAC_ADDRESS] [MAC_ADDRESS]'));
+test('URL punctuation',()=>assert.equal(scan('See https://example.test/path?q=private. HTTPS HTTP SMB RDP').text,'See [URL]. HTTPS HTTP SMB RDP'));
+test('UNC preserves following narrative',()=>assert.equal(scan(String.raw`\\ACME-FS01\Accounting stopped working.`).text,'[NETWORK_SHARE] stopped working.'));
+test('Domain user',()=>assert.equal(scan(String.raw`DOMAIN\jsmith`).text,String.raw`[DOMAIN]\[USERNAME]`));
+test('Hostname examples',()=>{const s=scan('JAX-WS-042 ACME-SRV-01 DC01 FS01.company.local').text;for(const v of ['JAX','ACME','DC01','company'])assert.ok(!s.includes(v));});
+test('Company and repeated person',()=>assert.equal(scan('Contact: Jordan Example\nCompany: Contoso Test Services\nJordan Example called.').text,'Contact: [USER_1]\nCompany: [COMPANY_1]\n[USER_1] called.'));
+test('Multiple people and servers',()=>assert.equal(scan('User: Jordan Example\nCaller: Taylor Example\nDC01 DC02 DC01').text,'User: [USER_1]\nCaller: [USER_2]\n[SERVER_1] [SERVER_2] [SERVER_1]'));
+test('Custom regex escaping and overlap',()=>assert.equal(scan('A+B Clinic / A+B',{custom:'A+B\nA+B Clinic'}).text,'[CUSTOM_REDACTED] / [CUSTOM_REDACTED]'));
+test('Ticket IDs',()=>assert.equal(scan('Ticket #123456 SR123456 Incident 123456').text,'[TICKET_ID] [TICKET_ID] [TICKET_ID]'));
+test('All supplied technical false positives',()=>{const s='Windows 11 Windows Server 2022 Microsoft 365 Office 365 Entra ID Active Directory DNS DHCP SMB RDP TCP UDP Port 443 Port 445 Event ID 4625 0x80070035 0x80004005 AADSTS50076 Error 1603 HTTP 401 HTTP 403 HTTP 500 BitLocker Intune OneDrive SharePoint Outlook Teams Adobe Acrobat FortiClient Windows 11 24H2 Chrome 140 FortiClient 7.4 Adobe Acrobat 2025 Microsoft 365 Apps';assert.equal(scan(s).text,s);});
+test('Strict off keeps infrastructure but removes identity',()=>assert.equal(scan('Contact: Jordan Example\nPhone: 904-555-1212\n10.10.5.12 DC01 jordan@example.test',{strict:false}).text,'Contact: [USER_1]\nPhone: [PHONE]\n10.10.5.12 DC01 [EMAIL]'));
+test('Placeholders survive re-scan',()=>{const s=scan('Contact: Jordan Example\nCompany: Contoso Test Services\nDC01').text;assert.equal(scan(s).text,s);});
+test('New identifiers do not collide with existing tokens',()=>assert.equal(scan('[SERVER_1] DC02').text,'[SERVER_1] [SERVER_2]'));
+test('Findings never retain originals',()=>assert.ok(!JSON.stringify(scan('private@example.test').findings).includes('private@example.test')));
+test('Markup stays text',()=>assert.equal(scan('<script>alert(1)</script>').text,'<script>alert(1)</script>'));
+test('All five prompt modes use only supplied sanitized text',()=>{for(const mode of SafeboxPrompts.modes){const p=SafeboxPrompts.buildPrompt('[USER_1] Error 1603',mode);assert.ok(p.includes('[USER_1] Error 1603'));assert.ok(p.includes('untrusted reference data'));}});
+test('Empty prompt remains empty',()=>assert.equal(SafeboxPrompts.buildPrompt('','next'),''));
+test('IPv6 sentence punctuation',()=>assert.equal(scan('Try fe80::1.').text,'Try [IPV6].'));
+test('Labeled four-part software builds',()=>assert.equal(scan('version 1.2.3.4 Chrome 140.0.1.2').text,'version 1.2.3.4 Chrome 140.0.1.2'));
+console.log(count+' tests passed');
